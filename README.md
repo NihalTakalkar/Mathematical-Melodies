@@ -12,6 +12,7 @@ Python code
 
 Run instructions: 
 
-1. Go to https://streamlit.io/ and follow the download instructions.
-2. Once downloaded, run the program and copy the path given (e.g., streamlit run C:\Science_Fair\Mathematical-Melodies\Mathematical_Melodies.py). It will be the line under the yellow Warning
-3. Open the command prompt and paste the path.
+1. Open the command prompt and type in "pip install mido"
+2. Go to https://streamlit.io/ and follow the download instructions.
+3. Once downloaded, run the program and copy the path given (e.g., streamlit run C:\Science_Fair\Mathematical-Melodies\Mathematical_Melodies.py). It will be the line under the yellow Warning
+4. Open the command prompt and paste the path.
