@@ -1,13 +1,13 @@
 import math, os, streamlit as st
 from mido import Message, MidiFile, MidiTrack
 
-instruments_dict = {
-    
-    # Pianos
+
+pianos = {
     "Acoustic Grand Piano": 0,
     "Electric Piano": 4,
+}
 
-    # Strings
+string_instruments = {
     "Violin": 40,
     "Viola": 41,
     "Cello": 42,
@@ -16,26 +16,29 @@ instruments_dict = {
     "Pizzicato Strings": 45,
     "Orchestral Harp": 46,
     "Church Organ": 19,
+}
 
-    # Brass
+brass_instruments = {
     "Trumpet": 56,
     "Trombone": 57,
     "Tuba": 58,
     "French Horn": 60,
-    "Brass Section": 61,
+    "Brass Section": 61
+}
 
-    # Woodwinds
-    "Soprano Sax": 64,
-    "Alto Sax": 65,
-    "Tenor Sax": 66,
-    "Baritone Sax": 67,
-    "Oboe": 68,
-    "Bassoon": 70,
-    "Clarinet": 71,
-    "Piccolo": 72,
-    "Flute": 73,
+woodwind_instruments = {
+     "Soprano Sax": 65,
+    "Alto Sax": 66,
+    "Tenor Sax": 67,
+    "Baritone Sax": 68,
+    "Oboe": 69,
+    "Bassoon": 71,
+    "Clarinet": 72,
+    "Piccolo": 73,
+    "Flute": 74,
+}
 
-    # Percussion
+percussion_instruments = {
     "Snare Drum": 38,
     "Snare Drum (roll)": 39,
     "Bass Drum": 35,
@@ -62,11 +65,14 @@ instruments_dict = {
     "Timpani": 47,
     "Timpani Roll": 48,
     "Cymbal Roll": 52,
+}
 
-    # Choir
+choir = {
     "Choir Aahs": 52,
     "Voice Oohs": 53
 }
+
+instruments_dict = {**pianos, **string_instruments, **brass_instruments, **woodwind_instruments, **percussion_instruments, **choir}
 
 octaves = {
 
@@ -76,24 +82,35 @@ octaves = {
     "Cello": -12,
     "Contrabass": -24,
     "Flute": 12,
-    "Piccolo": 24
+    "Piccolo": 24,
+    "Baritone Sax": -24,
+    "Tenor Sax": -12,
+    "Bassoon": -12,
+    "Soprano Sax": 12
 }
 
-def generate_midi(filename, sequence):
+def generate_midi(filename, sequence, key):
     mid = MidiFile()
-    track = MidiTrack()
-    mid.tracks.append(track)
 
-    track.append(Message('program_change', program=instrument, time=0))
+    for i in instrument_choice:
+        track = MidiTrack()
+        mid.tracks.append(track)
 
-    for n in sequence:
-        note = key[n % len(key)]
-        note = int(note) 
-        track.append(Message('note_on', note=note, velocity=64, time=0))
-        track.append(Message('note_off', note=note, velocity=64, time=480))
+        combined_program = instruments_dict[i]
+        if i in octaves:
+            combined_program += octaves[i]
+            
+        track.append(Message('program_change', program=combined_program, time=0))
+
+        sequence = assign_instrument_algorithm(i)
+
+        for n in sequence:
+            note = key[n % len(key)]
+            note = int(note) 
+            track.append(Message('note_on', note=note, velocity=64, time=0))
+            track.append(Message('note_off', note=note, velocity=64, time=480))
         
     mid.save(folder_name + filename)
-
 
 def generate_fibonacci(n):
     fib = [0, 1]
@@ -123,15 +140,28 @@ def multiples_of_five(n):
             multiples.append(num)
     return multiples
 
-
-instrument_choice = st.selectbox("What instrument do you want? ", list(instruments_dict.keys()))
-instrument = instruments_dict[instrument_choice]
+def assign_instrument_algorithm(instrument_name):
+    if instrument_name in brass_instruments:
+        return generate_primes(100)
+    if instrument_name in string_instruments or instrument_name in woodwind_instruments:
+        return generate_fibonacci(100)
+    if instrument_name in percussion_instruments or instrument_name in pianos:
+        return multiples_of_two(100) + multiples_of_five(100)
+    
+    return generate_fibonacci(100)
+    
+    
+st.title("Mathematical Melodies")
+instrument_choice = st.multiselect("Which instruments do you want? ", list(instruments_dict.keys()))
+instrument = instruments_dict[instrument_choice[0]] if instrument_choice else 0
 Key = st.selectbox("Select a key: ", 
-                   ("C", "C♯/D♭", "D", "D♯/E♭", "E", "F", "F♯/G♭", "G", 
+                   ("None Selected", "C", "C♯/D♭", "D", "D♯/E♭", "E", "F", "F♯/G♭", "G", 
                     "G♯/A♭", "A", "A♯/B♭", "B"))
 major_or_minor = st.selectbox("Major or Minor? ", ("Major", "Minor"))
 
-if Key == "C":
+if Key == "None Selected":
+    st.warning("Please select a key to proceed.")
+elif Key == "C":
     if major_or_minor == "Minor":
         key = [60, 62, 63, 65, 67, 68, 70]
     elif major_or_minor == "Major":
@@ -192,22 +222,15 @@ elif Key == "B":
     elif major_or_minor == "Major":
         key = [59, 61, 63, 64, 66, 68, 70]
 
-octave_adjustment = octaves.get(instrument_choice, 0)
-key = [note + octave_adjustment for note in key]
-
 
 if st.button("Generate Musical MIDI Files"):
-    folder_name = "C:/Mathematical_Melodies/"
+    folder_name = "C:/Mathematical Melodies/"
     if not os.path.exists(folder_name):
         os.mkdir(folder_name)
 
-    fibNum = generate_fibonacci(100)
-    primeNum = generate_primes(100)
-    twoNum = multiples_of_two(100)
-    fiveNum = multiples_of_five(100)
-    generate_midi("Fibonacci.mid", fibNum)
-    generate_midi("Prime.mid", primeNum)
-    generate_midi("Two.mid", twoNum)
-    generate_midi("Five.mid", fiveNum)
-    st.write("MIDI files have been generated.")
+    
+    generate_midi("mathematical_melody.mid", instrument, key)
+
+
+    st.write('MIDI files have been generated. Go to your C drive and locate a folder called "Mathematical Melodies" to find them!')
 
