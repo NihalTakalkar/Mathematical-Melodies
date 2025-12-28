@@ -1,4 +1,4 @@
-import math, os, streamlit as st
+import math, streamlit as st
 from mido import Message, MidiFile, MidiTrack, MetaMessage
 
 
@@ -89,21 +89,36 @@ octaves = {
     "Soprano Sax": 12
 }
 
-def generate_midi(filename, instruments, key):
+def generate_midi(filename, instruments, key, numMeasures, time_signature):
     mid = MidiFile()
     track_tempo = MidiTrack()
     mid.tracks.append(track_tempo)
-   
-    
+
     track_tempo.append(MetaMessage('set_tempo', tempo=500000, time=0))
 
-    MEASURES = 32
-    BEATS_PER_MEASURE = 4
     TICKS_PER_BEAT = mid.ticks_per_beat
-    TOTAL_TICKS = MEASURES * BEATS_PER_MEASURE * TICKS_PER_BEAT
-    note_duration = TICKS_PER_BEAT
 
-    track_tempo.append(MetaMessage('time_signature', numerator=4, denominator=4, clocks_per_click=24, notated_32nd_notes_per_beat=8, time=0))
+    if time_signature == "4/4":
+        numerator = 4
+        denominator = 4
+        NOTE_TICKS = TICKS_PER_BEAT
+        beats_per_measure = 4
+
+    elif time_signature == "3/4":
+        numerator = 3
+        denominator = 4
+        NOTE_TICKS = TICKS_PER_BEAT
+        beats_per_measure = 3
+
+    elif time_signature == "6/8":
+        numerator = 6
+        denominator = 8
+        NOTE_TICKS = TICKS_PER_BEAT // 2
+        beats_per_measure = 6
+
+    TOTAL_TICKS = numMeasures * beats_per_measure * NOTE_TICKS
+
+    track_tempo.append(MetaMessage('time_signature', numerator=numerator, denominator=denominator, time=0))
 
     for idx, i in enumerate(instruments):
         track = MidiTrack()
@@ -114,34 +129,45 @@ def generate_midi(filename, instruments, key):
         if i not in percussion_instruments:
             program = instruments_dict[i]
             octave = octaves.get(i, 0)
-            combined_program = program + (octave // 12) * 8
-                     
-            track.append(Message('program_change', program=combined_program, time=0, channel=channel))
+            track.append(Message('program_change', program=program, time=0, channel=channel))
         else:
             octave = 0
 
         sequence = assign_instrument_algorithm(i)
         numTicks = 0
-        indexSeq = 0
+        indexSeq = idx * 5
         lenSeq = len(sequence)
+
+        sequence = sequence.copy()
+        sequence = sequence[indexSeq % len(sequence):] + sequence[:indexSeq % len(sequence)]
+
+        step = 1
+        if i in brass_instruments:
+            step = 2
+        elif i in percussion_instruments:
+            step = 3
 
         while numTicks < TOTAL_TICKS:
             n = sequence[indexSeq % lenSeq]
+
+            duration = NOTE_TICKS * (1 + (n % 3))
+
             if i in percussion_instruments:
                 note = instruments_dict[i]
             else:
-                pitch = key[n % len(key)]
-                note = pitch + octave
+                degree = n % len(key)
+                register = (n // len(key)) % 3
+                note = key[degree] + octave + (register * 12)
 
             note = max(0, min(127, int(note)))
 
             track.append(Message('note_on', note=note, velocity=64, time=0, channel=channel))
-            track.append(Message('note_off', note=note, velocity=64, time=note_duration, channel=channel))
-            
-            numTicks += note_duration
-            indexSeq += 1
+            track.append(Message('note_off', note=note, velocity=64, time=NOTE_TICKS, channel=channel))
+
+            numTicks += duration
+            indexSeq += step
         
-    mid.save(folder_name + filename)
+    mid.save(filename)
 
 def generate_fibonacci(n):
     fib = [0, 1]
@@ -174,12 +200,18 @@ def multiples_of_five(n):
 def assign_instrument_algorithm(instrument_name):
     if instrument_name in brass_instruments:
         return generate_primes(100)
-    if instrument_name in string_instruments or instrument_name in woodwind_instruments:
+    elif instrument_name in string_instruments:
         return generate_fibonacci(100)
-    if instrument_name in percussion_instruments or instrument_name in pianos:
+    elif instrument_name in woodwind_instruments:
+        return generate_fibonacci(100)
+    elif instrument_name in percussion_instruments:
         return list(set(multiples_of_two(100) + multiples_of_five(100)))
-    
-    return generate_fibonacci(100)
+    elif instrument_name in pianos:
+        return list(set(multiples_of_two(100) + multiples_of_five(100)))
+    elif instrument_name in choir:
+        return generate_fibonacci(100)
+    else:
+        return generate_fibonacci(100)
 
 st.title("Mathematical Melodies")
 instrument_choice = st.multiselect("Which instruments do you want? ", list(instruments_dict.keys()))
@@ -254,15 +286,15 @@ if Key != "None Selected":
             key = [59, 61, 63, 64, 66, 68, 70]
     
 
-if st.button("Generate Musical MIDI Files"):
-    folder_name = "C:/Mathematical Melodies/"
-    if not os.path.exists(folder_name):
-        os.mkdir(folder_name)
+numMeasures = st.number_input("How many measures?", min_value=1, max_value=32, value=4)
+time_signature = st.selectbox("What time signature?", ("None Selected", "4/4", "3/4", "6/8"))
 
-    if instrument_choice and Key != "None Selected":
-        generate_midi("mathematical_melody.mid", instrument_choice, key)
-        st.success('Your MIDI file has been generated!')
-        with open(folder_name + "mathematical_melody.mid", "rb") as file:
+if st.button("Generate Musical MIDI Files"):
+    if instrument_choice and Key != "None Selected" and numMeasures > 0 and time_signature != "None Selected":
+        generate_midi("mathematical_melody.mid", instrument_choice, key, numMeasures, time_signature)
+        st.success("Your MIDI file has been generated!")
+
+        with open("mathematical_melody.mid", "rb") as file:
             st.download_button(
                 label="Download MIDI file",
                 data=file,
@@ -270,4 +302,4 @@ if st.button("Generate Musical MIDI Files"):
                 mime="audio/midi"
             )
     else:
-        st.error("Please select at least one instrument and a key.")
+        st.error("Please fill in all required fields.")
