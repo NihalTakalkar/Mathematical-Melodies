@@ -1,4 +1,4 @@
-import math, streamlit as st
+import math, os, streamlit as st, music21 as m21
 from mido import Message, MidiFile, MidiTrack, MetaMessage
 
 
@@ -295,11 +295,18 @@ if st.button("Generate Musical MIDI Files"):
         st.success("Your MIDI file has been generated!")
 
         with open("mathematical_melody.mid", "rb") as file:
-            st.download_button(
-                label="Download MIDI file",
-                data=file,
-                file_name="mathematical_melody.mid",
-                mime="audio/midi"
-            )
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.button("Play MIDI file", on_click=lambda: m21.converter.parse("mathematical_melody.mid").show('midi'))
+            
+            with col2:
+                score = m21.converter.parse("mathematical_melody.mid")
+                score.write("musicxml", "mathematical_melody.musicxml")
+
+                with open("mathematical_melody.musicxml", "rb") as f:
+                    st.download_button(label="Download Sheet Music", data=f, file_name="mathematical_melody.pdf", mime="application/pdf")
+                    print(os.path.getsize("mathematical_melody.pdf"))
     else:
         st.error("Please fill in all required fields.")
