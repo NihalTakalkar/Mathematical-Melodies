@@ -12,7 +12,8 @@ Python code
 
 Run instructions: 
 
-1. Open the command prompt and type in "pip install mido"
-2. Go to https://streamlit.io/ and follow the download instructions.
-3. Once downloaded, run the program and copy the path given (e.g., streamlit run C:\Science_Fair\Mathematical-Melodies\Mathematical_Melodies.py). It will be the line under the yellow Warning
-4. Open the command prompt and paste the path.
+1. Open the command prompt and type in "pip install mido".
+2. Stay in the command prompyt and type in "pip install music21".
+3. Go to https://streamlit.io/ and follow the download instructions.
+4. Once downloaded, run the program and copy the path given (e.g., streamlit run C:\Science_Fair\Mathematical-Melodies\Mathematical_Melodies.py). It will be the line under the yellow Warning
+5. Open the command prompt and paste the path.
