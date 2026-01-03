@@ -1,12 +1,17 @@
 import streamlit as st, music21 as m21
 
-
-def analyze_music(file_path):
-
-    # Load the MIDI file
+def overall_analysis(file_path):
     score = m21.converter.parse(file_path)
+    notes = score.flat.notes
+    pitched_notes = [note for note in notes if isinstance(note, m21.note.Note)]
 
-    all_notes = score.flat.notes
+    analysis_results = analysis(score)
+
+    return analysis_results
+
+def analysis(stream):
+
+    all_notes = stream.flat.notes
     pitched_notes = [note for note in all_notes if isinstance(note, m21.note.Note)]
 
     # Analyze interval distribution
@@ -31,23 +36,24 @@ def analyze_music(file_path):
     mean_interval = sum(interval * count for interval, count in interval_distribution.items()) / sum(interval_distribution.values()) if sum(interval_distribution.values()) != 0 else 0
     step_size_dist = step_size_distribution(1, mean_interval)
     
-    def rhythm_density(midi_path):
-        score = m21.converter.parse(midi_path)
-        total_duration = score.highestTime
-        note_count = len(score.flat.notes)
-        return note_count / total_duration if total_duration != 0 else 0
-    rhythm_density_value = rhythm_density(file_path)
+    def rhythm_density(stream):
+        total_duration = stream.highestTime
+        num_notes = len(pitched_notes)
+        return num_notes / total_duration if total_duration != 0 else 0
+    rhythm_density_value = rhythm_density(stream)
+        
     
-    def harmonic_complexity(midi_path):
-        score = m21.converter.parse(midi_path)
-        chords = score.chordify().recurse().getElementsByClass('Chord')
+    def harmonic_complexity(stream):
+        score = stream if isinstance(stream, m21.stream.Stream) else m21.converter.parse(stream)
+        chords = score.chordify().recurse().getElementsByClass(m21.chord.Chord)
+
         unique_chords = set()
-        
         for chord in chords:
-            unique_chords.add(tuple(sorted(p.pitchClass for p in chord.pitches)))
-        
-        return len(unique_chords) / len(chords) if len(chords) != 0 else 0
-    harmonic_complexity_value = harmonic_complexity(file_path)
+            pcs = tuple(sorted(p.pitchClass for p in chord.pitches))
+            unique_chords.add(pcs)
+
+        return len(unique_chords) / len(chords) if chords else 0
+    harmonic_complexity_value = harmonic_complexity(stream)
     
     def melodic_contour(notes):
         contour = []
@@ -68,9 +74,9 @@ def analyze_music(file_path):
         'rhythm_density': rhythm_density_value,
         'harmonic_complexity': harmonic_complexity_value,
         'melodic_contour': melodic_contour_value
-    }
+    }   
 
-def analysis_output(results):
+def overall_analysis_output(results):
 
         interpretation = {}
 
@@ -110,3 +116,66 @@ def analysis_output(results):
 
 
         return interpretation
+
+def individual_analysis(file_path):
+
+    score = m21.converter.parse(file_path)
+    part_analyses = {}
+
+    for part in score.parts:
+        part_name = part.partName if part.partName else "Unknown Instrument"
+        notes = part.flat.notes
+        pitched_notes = [note for note in notes if isinstance(note, m21.note.Note)]
+
+        analysis_results = analysis(part)
+
+        part_analyses[part_name] = analysis_results
+
+    return part_analyses
+
+def individual_analysis_output(part_analyses):
+
+    interpretations = {}
+
+    for part_name, results in part_analyses.items():
+        interpretation = {}
+
+        step = results['step_size_distribution']
+        interpretation['step_size'] = (
+            f"The {part_name} has small step sizes, giving smooth melodic movement."
+            if step < 5 else
+            f"The {part_name} has moderate step sizes, giving balanced melodic motion."
+            if step < 10 else
+            f"The {part_name} has large step sizes, creating dramatic melodic leaps."
+        )
+
+        rhythm = results['rhythm_density']
+        interpretation['rhythm'] = (
+            f"The {part_name} has low rhythmic density."
+            if rhythm < 2 else
+            f"The {part_name} has moderate rhythmic activity."
+            if rhythm < 4 else
+            f"The {part_name} has high rhythmic activity."
+        )
+
+        harmony = results['harmonic_complexity']
+        interpretation['harmony'] = (
+            f"The {part_name} has simple harmonic structures."
+            if harmony < 0.3 else
+            f"The {part_name} has moderately complex harmony."
+            if harmony < 0.6 else
+            f"The {part_name} has rich harmonic complexity."
+        )
+
+        contour = results['melodic_contour']
+        interpretation['melodic_contour'] = (
+            f"The {part_name} generally ascends."
+            if contour.count('up') > contour.count('down') else
+            f"The {part_name} generally descends."
+            if contour.count('down') > contour.count('up') else
+            f"The {part_name} has a balanced melodic contour."
+        )
+
+        interpretations[part_name] = interpretation
+
+    return interpretations
