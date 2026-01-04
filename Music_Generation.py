@@ -51,20 +51,6 @@ percussion_instruments = {
     "Tom 2": 43,
     "Tom 3": 45,
     "Tom 4": 47,
-    "Xylophone": 13,
-    "Marimba": 12,
-    "Vibraphone": 11,
-    "Glockenspiel": 10,
-    "Tubular Bells": 14,
-    "Chimes": 15,
-    "Triangle": 81,
-    "Tambourine": 54,
-    "Woodblock": 76,
-    "Cowbell": 56,
-    "Maracas": 70,
-    "Timpani": 47,
-    "Timpani Roll": 48,
-    "Cymbal Roll": 52,
 }
 
 choir = {
