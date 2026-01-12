@@ -1,7 +1,6 @@
 import math
 from mido import Message, MidiFile, MidiTrack, MetaMessage
 
-
 pianos = {
     "Acoustic Grand Piano": 0,
     "Electric Piano": 4,
@@ -27,15 +26,15 @@ brass_instruments = {
 }
 
 woodwind_instruments = {
-     "Soprano Sax": 65,
-    "Alto Sax": 66,
-    "Tenor Sax": 67,
-    "Baritone Sax": 68,
-    "Oboe": 69,
-    "Bassoon": 71,
-    "Clarinet": 72,
-    "Piccolo": 73,
-    "Flute": 74,
+     "Soprano Sax": 64,
+    "Alto Sax": 65,
+    "Tenor Sax": 66,
+    "Baritone Sax": 67,
+    "Oboe": 68,
+    "Bassoon": 70,
+    "Clarinet": 71,
+    "Piccolo": 72,
+    "Flute": 73,
 }
 
 percussion_instruments = {
@@ -75,7 +74,7 @@ octaves = {
     "Soprano Sax": 12
 }
 
-def generate_midi(filename, instruments, key, numMeasures, time_signature):
+def generate_midi(filename, inst_math_choices, key, numMeasures, time_signature):
     mid = MidiFile()
     track_tempo = MidiTrack()
     mid.tracks.append(track_tempo)
@@ -106,31 +105,31 @@ def generate_midi(filename, instruments, key, numMeasures, time_signature):
 
     track_tempo.append(MetaMessage('time_signature', numerator=numerator, denominator=denominator, time=0))
 
-    for idx, i in enumerate(instruments):
+    for idx, (instrument, concept) in enumerate(inst_math_choices.items()):
         track = MidiTrack()
+        track.append(MetaMessage('track_name', name=instrument, time=0))
         mid.tracks.append(track)
 
-        channel = 9 if i in percussion_instruments else idx % 9
+        channel = 9 if instrument in percussion_instruments else (idx % 15)
 
-        if i not in percussion_instruments:
-            program = instruments_dict[i]
-            octave = octaves.get(i, 0)
+        if instrument not in percussion_instruments:
+            program = instruments_dict[instrument]
+            octave = octaves.get(instrument, 0)
             track.append(Message('program_change', program=program, time=0, channel=channel))
         else:
             octave = 0
 
-        sequence = assign_instrument_algorithm(i)
+        sequence = assign_instrument_algorithm(concept)
         numTicks = 0
         indexSeq = idx * 5
         lenSeq = len(sequence)
 
-        sequence = sequence.copy()
-        sequence = sequence[indexSeq % len(sequence):] + sequence[:indexSeq % len(sequence)]
+        
 
         step = 1
-        if i in brass_instruments:
+        if instrument in brass_instruments:
             step = 2
-        elif i in percussion_instruments:
+        elif instrument in percussion_instruments:
             step = 3
 
         while numTicks < TOTAL_TICKS:
@@ -138,8 +137,8 @@ def generate_midi(filename, instruments, key, numMeasures, time_signature):
 
             duration = NOTE_TICKS * (1 + (n % 3))
 
-            if i in percussion_instruments:
-                note = instruments_dict[i]
+            if instrument in percussion_instruments:
+                note = instruments_dict[instrument]
             else:
                 degree = n % len(key)
                 register = (n // len(key)) % 3
@@ -148,7 +147,7 @@ def generate_midi(filename, instruments, key, numMeasures, time_signature):
             note = max(0, min(127, int(note)))
 
             track.append(Message('note_on', note=note, velocity=64, time=0, channel=channel))
-            track.append(Message('note_off', note=note, velocity=64, time=NOTE_TICKS, channel=channel))
+            track.append(Message('note_off', note=note, velocity=64, time=duration, channel=channel))
 
             numTicks += duration
             indexSeq += step
@@ -183,19 +182,15 @@ def multiples_of_five(n):
             multiples.append(num)
     return multiples
 
-def assign_instrument_algorithm(instrument_name):
-    if instrument_name in brass_instruments:
+def assign_instrument_algorithm(concept):
+    if concept == "Fibonacci Sequence":
+        return generate_fibonacci(100)
+    elif concept == "Prime Numbers":
         return generate_primes(100)
-    elif instrument_name in string_instruments:
-        return generate_fibonacci(100)
-    elif instrument_name in woodwind_instruments:
-        return generate_fibonacci(100)
-    elif instrument_name in percussion_instruments:
-        return list(set(multiples_of_two(100) + multiples_of_five(100)))
-    elif instrument_name in pianos:
-        return list(set(multiples_of_two(100) + multiples_of_five(100)))
-    elif instrument_name in choir:
-        return generate_fibonacci(100)
+    elif concept == "Multiples of 2":
+        return multiples_of_two(100)
+    elif concept == "Multiples of 5":
+        return multiples_of_five(100)
     else:
         return generate_fibonacci(100)
     
