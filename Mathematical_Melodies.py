@@ -44,8 +44,28 @@ if "time_signature" not in st.session_state:
 # Streamlit App Interface
 
 st.title("Mathematical Melodies")
-instrument_choice = st.multiselect("Which instruments do you want? ", list(mg.instruments_dict.keys()))
-instrument = mg.instruments_dict[instrument_choice[0]] if instrument_choice else 0
+
+# Initialize session dictionary if it doesn't exist
+if "inst_math_choices" not in st.session_state:
+    st.session_state.inst_math_choices = {}
+
+instrument_choice = st.multiselect(
+    "Which instruments do you want?",
+    list(mg.instruments_dict.keys())
+)
+
+for instrument in instrument_choice:
+    math_choice = st.selectbox(
+        f"Select mathematical concept for {instrument}:",
+        ["Fibonacci Sequence", "Prime Numbers", "Multiples of 2", "Multiples of 5"],
+        key=f"math_select_{instrument}"
+    )
+
+    # Update only this instrument's concept
+    st.session_state.inst_math_choices[instrument] = math_choice
+
+    st.write(f"You selected {math_choice} for the {instrument}.")
+
 Key = st.selectbox("Select a key: ", 
                    ("None Selected", "C", "C♯/D♭", "D", "D♯/E♭", "E", "F", "F♯/G♭", "G", 
                     "G♯/A♭", "A", "A♯/B♭", "B"))
@@ -64,7 +84,7 @@ time_signature = st.selectbox("What time signature?", ("None Selected", "4/4", "
 # Generate MIDI File
 if st.button("Generate Musical MIDI"):
     if instrument_choice and Key != "None Selected" and numMeasures > 0 and time_signature != "None Selected":
-        mg.generate_midi("mathematical_melody.mid", instrument_choice, key, numMeasures, time_signature)
+        mg.generate_midi("mathematical_melody.mid", st.session_state.inst_math_choices, key, numMeasures, time_signature)
         st.session_state.midi_generated = True
         st.success("Your MIDI file has been generated!")
 
@@ -118,11 +138,17 @@ if st.session_state.midi_generated:
     if st.session_state.individual_analysis_done:
         st.header("Individual Instrument Analysis")
 
+        # Run your analysis functions
         part_analyses = ma.individual_analysis("mathematical_melody.mid")
         individual_interpretation = ma.individual_analysis_output(part_analyses)
 
+        # Loop through instruments and display results
         for part_name, interpretations in individual_interpretation.items():
+            # Get the math concept used for this instrument
+            math_concept = st.session_state.inst_math_choices.get(part_name, "Unknown")
+
             st.subheader(f"Instrument: {part_name}")
+            st.write(f"Math concept used: {math_concept}")
 
             st.write("**Interval Distribution:**")
             st.write(interpretations['step_size'])
