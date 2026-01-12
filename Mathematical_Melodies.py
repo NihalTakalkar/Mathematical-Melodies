@@ -1,6 +1,9 @@
 import streamlit as st, music21 as m21
 import Music_Generation as mg
 import Music_Analysis as ma
+import pandas as pd
+
+st.set_page_config(layout="wide")
 
 if st.button("🔄 Make a new song"):
     st.session_state.midi_generated = False
@@ -134,32 +137,62 @@ if st.session_state.midi_generated:
         if st.button("Analyze Individual Instrument Parts"):
             st.session_state.individual_analysis_done = True
 
-
+    
     if st.session_state.individual_analysis_done:
-        st.header("Individual Instrument Analysis")
+        st.header("Instrument Analysis Results")
 
-        # Run your analysis functions
+        # Run analysis once
         part_analyses = ma.individual_analysis("mathematical_melody.mid")
         individual_interpretation = ma.individual_analysis_output(part_analyses)
 
-        # Loop through instruments and display results
-        for part_name, interpretations in individual_interpretation.items():
-            # Get the math concept used for this instrument
-            math_concept = st.session_state.inst_math_choices.get(part_name, "Unknown")
+        # Build data for table
+        instruments = []
+        math_concepts = []
+        interval_distribution = []
+        rhythm_density = []
+        harmonic_complexity = []
+        melodic_contour = []
+        works_well = []
 
-            st.subheader(f"Instrument: {part_name}")
-            st.write(f"Math concept used: {math_concept}")
+        for instr in st.session_state.inst_math_choices.keys():
+            instruments.append(instr)
+            math_concepts.append(st.session_state.inst_math_choices.get(instr, "N/A"))
 
-            st.write("**Interval Distribution:**")
-            st.write(interpretations['step_size'])
+            # If this instrument was analyzed, get its metrics; otherwise, use "N/A"
+            metrics = individual_interpretation.get(instr, {})
+            interval_distribution.append(metrics.get('step_size', "N/A"))
+            rhythm_density.append(metrics.get('rhythm', "N/A"))
+            harmonic_complexity.append(metrics.get('harmony', "N/A"))
+            melodic_contour.append(metrics.get('melodic_contour', "N/A"))
+            works, explanation = ma.concept_works(instr, st.session_state.inst_math_choices.get(instr, "N/A"))
+            works_well.append("Yes - " + explanation if works else "No - " + explanation)
 
-            st.write("**Rhythm Density:**")
-            st.write(interpretations['rhythm'])
+        # Create DataFrame
+        summary_df = pd.DataFrame({
+            "Instrument": instruments,
+            "Math Concept Used": math_concepts,
+            "Interval Distribution": interval_distribution,
+            "Rhythm Density": rhythm_density,
+            "Harmonic Complexity": harmonic_complexity,
+            "Melodic Contour": melodic_contour,
+            "Does the concept work well for this instrument?": works_well
+        })
 
-            st.write("**Harmonic Complexity:**")
-            st.write(interpretations['harmony'])
+        # Display table
+        rows = len(summary_df)
+        row_height = 45
+        header_height = 60
+        padding_fix = 90
 
-            st.write("**Melodic Contour:**")
-            st.write(interpretations['melodic_contour'])
+        table_height = max(
+            200,
+            header_height + row_height * rows - padding_fix
+        )
+
+        st.dataframe(
+            summary_df,
+            use_container_width=True,
+            height=table_height
+        )
 
     

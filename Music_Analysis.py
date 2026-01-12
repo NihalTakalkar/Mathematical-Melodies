@@ -1,4 +1,5 @@
 import streamlit as st, music21 as m21
+from Music_Generation import string_instruments, woodwind_instruments, brass_instruments, percussion_instruments, pianos
 
 def overall_analysis(file_path):
     score = m21.converter.parse(file_path)
@@ -133,6 +134,103 @@ def individual_analysis(file_path):
 
     return part_analyses
 
+def concept_works(instrument, concept):
+
+     # STRINGS
+    if instrument in string_instruments:
+        if concept == "Fibonacci Sequence":
+            return True, (
+                "The Fibonacci Sequence creates gradual pitch expansion, "
+                "which aligns well with the smooth, lyrical phrasing of string instruments."
+            )
+        if concept == "Prime Numbers":
+            return True, (
+                "Prime Numbers introduce irregular but expressive interval patterns, "
+                "which string instruments can articulate clearly."
+            )
+        if concept == "Multiples of 2":
+            return True, (
+                "Multiples of 2 produce predictable interval spacing, "
+                "supporting stable melodic motion on string instruments."
+            )
+        if concept == "Multiples of 5":
+            return False, (
+                "Multiples of 5 create large, abrupt jumps that reduce melodic continuity, "
+                "which is less suitable for sustained string phrasing."
+            )
+
+    # WOODWINDS
+    if instrument in woodwind_instruments:
+        if concept in {"Fibonacci Sequence", "Prime Numbers"}:
+            return True, (
+                "This concept creates varied but singable melodic contours, "
+                "which woodwind instruments handle well due to their agility."
+            )
+        if concept == "Multiples of 2":
+            return True, (
+                "Even-number spacing results in balanced melodic movement, "
+                "which suits the controlled breath phrasing of woodwinds."
+            )
+        if concept == "Multiples of 5":
+            return False, (
+                "Multiples of 5 tend to produce wide intervallic jumps that can disrupt "
+                "woodwind phrasing and intonation stability."
+            )
+
+    # BRASS
+    if instrument in brass_instruments:
+        if concept == "Fibonacci Sequence":
+            return True, (
+                "The gradual expansion of Fibonacci intervals complements the natural overtone "
+                "series of brass instruments."
+            )
+        if concept == "Prime Numbers":
+            return True, (
+                "Prime-based spacing creates bold, declarative melodic shapes that align "
+                "with the strong projection of brass instruments."
+            )
+        return False, (
+            "Highly repetitive or rhythm-driven sequences limit the expressive range "
+            "of brass instruments."
+        )
+
+    # PERCUSSION
+    if instrument in percussion_instruments:
+        if concept == "Multiples of 2":
+            return True, (
+                "Multiples of 2 reinforce steady rhythmic subdivision, "
+                "which is fundamental to percussion performance."
+            )
+        if concept == "Multiples of 5":
+            return True, (
+                "Multiples of 5 introduce polyrhythmic groupings that enhance "
+                "percussive complexity."
+            )
+        return False, (
+            "Pitch-driven mathematical sequences are less effective for "
+            "unpitched percussion instruments."
+        )
+
+    # KEYBOARD
+    if instrument in pianos:
+        return True, (
+            "Keyboard instruments support both harmonic and rhythmic structures, "
+            "making them compatible with all mathematical concepts."
+        )
+
+    # CHOIR
+    if instrument == "Choir":
+        if concept in {"Fibonacci Sequence", "Prime Numbers"}:
+            return True, (
+                "These sequences produce expressive melodic contours suitable "
+                "for vocal phrasing."
+            )
+        return False, (
+            "Highly repetitive numeric patterns can sound mechanical when applied to voices."
+        )
+
+    return False, "This concept is not recommended for the selected instrument."
+
 def individual_analysis_output(part_analyses):
 
     interpretations = {}
@@ -140,6 +238,7 @@ def individual_analysis_output(part_analyses):
     for part_name, results in part_analyses.items():
         interpretation = {}
 
+        
         step = results['step_size_distribution']
         interpretation['step_size'] = (
             f"The {part_name} has small step sizes, giving smooth melodic movement."
