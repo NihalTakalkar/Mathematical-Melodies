@@ -164,7 +164,7 @@ if st.session_state.midi_generated:
             rhythm_density.append(metrics.get('rhythm', "N/A"))
             harmonic_complexity.append(metrics.get('harmony', "N/A"))
             melodic_contour.append(metrics.get('melodic_contour', "N/A"))
-            works, explanation = ma.concept_works(instr, st.session_state.inst_math_choices.get(instr, "N/A"))
+            works, explanation = ma.concept_works(instr, part_analyses.get(instr))
             works_well.append("Yes - " + explanation if works else "No - " + explanation)
 
         # Create DataFrame
@@ -178,6 +178,8 @@ if st.session_state.midi_generated:
             "Does the concept work well for this instrument?": works_well
         })
 
+
+
         # Display table
         rows = len(summary_df)
         row_height = 45
@@ -185,7 +187,7 @@ if st.session_state.midi_generated:
         padding_fix = 90
 
         table_height = max(
-            200,
+            250,
             header_height + row_height * rows - padding_fix
         )
 

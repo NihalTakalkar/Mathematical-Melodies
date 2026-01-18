@@ -1,5 +1,5 @@
 import streamlit as st, music21 as m21
-from Music_Generation import string_instruments, woodwind_instruments, brass_instruments, percussion_instruments, pianos
+from Music_Generation import string_instruments, woodwind_instruments, brass_instruments, percussion_instruments, pianos, choir
 
 def overall_analysis(file_path):
     score = m21.converter.parse(file_path)
@@ -134,102 +134,6 @@ def individual_analysis(file_path):
 
     return part_analyses
 
-def concept_works(instrument, concept):
-
-     # STRINGS
-    if instrument in string_instruments:
-        if concept == "Fibonacci Sequence":
-            return True, (
-                "The Fibonacci Sequence creates gradual pitch expansion, "
-                "which aligns well with the smooth, lyrical phrasing of string instruments."
-            )
-        if concept == "Prime Numbers":
-            return True, (
-                "Prime Numbers introduce irregular but expressive interval patterns, "
-                "which string instruments can articulate clearly."
-            )
-        if concept == "Multiples of 2":
-            return True, (
-                "Multiples of 2 produce predictable interval spacing, "
-                "supporting stable melodic motion on string instruments."
-            )
-        if concept == "Multiples of 5":
-            return False, (
-                "Multiples of 5 create large, abrupt jumps that reduce melodic continuity, "
-                "which is less suitable for sustained string phrasing."
-            )
-
-    # WOODWINDS
-    if instrument in woodwind_instruments:
-        if concept in {"Fibonacci Sequence", "Prime Numbers"}:
-            return True, (
-                "This concept creates varied but singable melodic contours, "
-                "which woodwind instruments handle well due to their agility."
-            )
-        if concept == "Multiples of 2":
-            return True, (
-                "Even-number spacing results in balanced melodic movement, "
-                "which suits the controlled breath phrasing of woodwinds."
-            )
-        if concept == "Multiples of 5":
-            return False, (
-                "Multiples of 5 tend to produce wide intervallic jumps that can disrupt "
-                "woodwind phrasing and intonation stability."
-            )
-
-    # BRASS
-    if instrument in brass_instruments:
-        if concept == "Fibonacci Sequence":
-            return True, (
-                "The gradual expansion of Fibonacci intervals complements the natural overtone "
-                "series of brass instruments."
-            )
-        if concept == "Prime Numbers":
-            return True, (
-                "Prime-based spacing creates bold, declarative melodic shapes that align "
-                "with the strong projection of brass instruments."
-            )
-        return False, (
-            "Highly repetitive or rhythm-driven sequences limit the expressive range "
-            "of brass instruments."
-        )
-
-    # PERCUSSION
-    if instrument in percussion_instruments:
-        if concept == "Multiples of 2":
-            return True, (
-                "Multiples of 2 reinforce steady rhythmic subdivision, "
-                "which is fundamental to percussion performance."
-            )
-        if concept == "Multiples of 5":
-            return True, (
-                "Multiples of 5 introduce polyrhythmic groupings that enhance "
-                "percussive complexity."
-            )
-        return False, (
-            "Pitch-driven mathematical sequences are less effective for "
-            "unpitched percussion instruments."
-        )
-
-    # KEYBOARD
-    if instrument in pianos:
-        return True, (
-            "Keyboard instruments support both harmonic and rhythmic structures, "
-            "making them compatible with all mathematical concepts."
-        )
-
-    # CHOIR
-    if instrument == "Choir":
-        if concept in {"Fibonacci Sequence", "Prime Numbers"}:
-            return True, (
-                "These sequences produce expressive melodic contours suitable "
-                "for vocal phrasing."
-            )
-        return False, (
-            "Highly repetitive numeric patterns can sound mechanical when applied to voices."
-        )
-
-    return False, "This concept is not recommended for the selected instrument."
 
 def individual_analysis_output(part_analyses):
 
@@ -278,3 +182,197 @@ def individual_analysis_output(part_analyses):
         interpretations[part_name] = interpretation
 
     return interpretations
+
+def concept_works(instrument, results): 
+
+    fit_score = 0
+    feedback = ""
+
+    step = results.get('step_size_distribution', 0)
+    rhythm = results.get('rhythm_density', 0)
+    harmony = results.get('harmonic_complexity', 0)
+    contour = results.get('melodic_contour', [])
+   
+
+    # step size analysis
+    if instrument in string_instruments:
+        if step <= 5:
+            fit_score += 2
+            feedback += "The step size fits well with string instruments.\n"
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider using smaller step sizes for string instruments.\n"
+
+    elif instrument in woodwind_instruments:
+        if step >= 2 and step <= 7:
+            fit_score += 2
+            feedback += "The step size fits well with woodwind instruments.\n"
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider using moderate step sizes for woodwind instruments.\n"
+        
+    elif instrument in brass_instruments:
+        if step >= 4 and step <= 12:
+            fit_score += 2
+            feedback += "The step size fits well with brass instruments.\n"
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider using larger step sizes for brass instruments.\n"
+    
+    elif instrument in percussion_instruments:
+        fit_score += 2
+        feedback += "Step size is less relevant for percussion instruments.\n"
+
+    elif instrument in pianos:
+        fit_score += 2
+        feedback += "Any step size works well for pianos.\n"
+
+    elif instrument in choir:
+        if step >= 1 and step <= 5:
+            fit_score += 2
+            feedback += "The step size fits well with choir voices.\n"
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider using moderate step sizes for choir voices.\n"
+
+    # rhythm density analysis
+    if instrument in string_instruments:
+        if rhythm <= 2:
+            fit_score += 2
+            feedback += "The rhythm density fits well with string instruments.\n"
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider using low rhythm density for string instruments.\n"
+
+    elif instrument in woodwind_instruments:
+        if rhythm >= 2 and rhythm <= 4:
+            fit_score += 2
+            feedback += "The rhythm density fits well with woodwind instruments.\n"
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider using moderate rhythm density for woodwind instruments.\n"
+    
+    elif instrument in brass_instruments:
+        if rhythm <= 2:
+            fit_score += 2
+            feedback += "The rhythm density fits well with brass instruments.\n"
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider using low rhythm density for brass instruments.\n"
+
+    elif instrument in percussion_instruments:
+        if rhythm >= 2 and rhythm <= 6:
+            fit_score += 2
+            feedback += "The rhythm density fits well with percussion instruments.\n"
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider using moderate rhythm density for percussion instruments.\n"
+
+    elif instrument in pianos:
+        if rhythm <= 6:
+            fit_score += 2
+            feedback += "The rhythm density fits well with pianos.\n" 
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider using moderate rhythm density for pianos.\n"
+
+    elif instrument in choir:
+        if rhythm <= 2:
+            fit_score += 2
+            feedback += "The rhythm density fits well with choir voices.\n"
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider using low rhythm density for choir voices.\n"
+
+    # harmonic complexity
+    if instrument in string_instruments:
+        if harmony <= 0.4:
+            fit_score += 2
+            feedback += "The harmonic complexity fits well with string instruments.\n"
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider using simpler harmonic structures for string instruments.\n"
+
+    elif instrument in woodwind_instruments:
+        if harmony >= 0.3 and harmony <= 0.6:
+            fit_score += 2
+            feedback += "The harmonic complexity fits well with woodwind instruments.\n"
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider using moderate harmonic complexity for woodwind instruments.\n"
+
+    elif instrument in brass_instruments:
+        if harmony >= 0.1 and harmony <= 0.4:
+            fit_score += 2
+            feedback += "The harmonic complexity fits well with brass instruments.\n"
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider using low harmonic complexity for brass instruments.\n"
+
+    elif instrument in percussion_instruments:
+        if harmony <= 0.2:
+            fit_score += 2
+            feedback += "The harmonic complexity fits well with percussion instruments.\n"
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider using very simple harmonic structures for percussion instruments.\n"
+
+    elif instrument in pianos:
+        if harmony >= 0.3 and harmony <= 0.8:
+            fit_score += 2
+            feedback += "The harmonic complexity fits well with pianos.\n"
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider using moderate harmonic complexity for pianos.\n"
+
+    elif instrument in choir:
+        if harmony <= 0.4:
+            fit_score += 2
+            feedback += "The harmonic complexity fits well with choir voices.\n"
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider using simpler harmonic structures for choir voices.\n"
+
+    # melodic contour
+    if instrument in string_instruments:
+        if "up" in contour:
+            fit_score += 2
+            feedback += "The melodic contour fits well with string instruments.\n"
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider incorporating ascending melodic lines for string instruments.\n"
+    
+    elif instrument in woodwind_instruments:
+        if "up" in contour or "down" in contour:
+            fit_score += 2
+            feedback += "The melodic contour fits well with woodwind instruments.\n"
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider adding more melodic movement for woodwind instruments.\n"
+
+    elif instrument in brass_instruments:
+        if "up" in contour:
+            fit_score += 2
+            feedback += "The melodic contour fits well with brass instruments.\n"
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider incorporating ascending melodic lines for brass instruments.\n"
+
+    elif instrument in percussion_instruments:
+        fit_score += 2
+        feedback += "Melodic contour is less relevant for percussion instruments.\n"
+    
+    elif instrument in pianos:
+        fit_score += 2
+        feedback += "Any melodic contour works well for pianos.\n"
+
+    elif instrument in choir:
+        if "up" in contour or "down" in contour:
+            fit_score += 2
+            feedback += "The melodic contour fits well with choir voices.\n"
+        else:
+            fit_score -= 1 if fit_score > 0 else 0
+            feedback += "Consider adding more melodic movement for choir voices.\n"
+
+    works_well = fit_score >= 5
+    return works_well, feedback
