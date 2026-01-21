@@ -175,7 +175,6 @@ if st.session_state.midi_generated:
             "Rhythm Density": rhythm_density,
             "Harmonic Complexity": harmonic_complexity,
             "Melodic Contour": melodic_contour,
-            "Does the concept work well for this instrument?": works_well
         })
 
 
@@ -197,4 +196,10 @@ if st.session_state.midi_generated:
             height=table_height
         )
 
-    
+        st.subheader("Does the selected mathematical concept work well for the instrument?")
+        for idx, instr in enumerate(st.session_state.inst_math_choices.keys()):
+            works, explanation = ma.concept_works(instr, part_analyses.get(instr))
+            if works:
+                st.success(f"{instr}: Yes - {explanation}")
+            else:
+                st.error(f"{instr}: No - {explanation}")    
