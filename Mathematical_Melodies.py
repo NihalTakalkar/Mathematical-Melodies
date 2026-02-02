@@ -164,6 +164,7 @@ if st.session_state.midi_generated:
             rhythm_density.append(metrics.get('rhythm', "N/A"))
             harmonic_complexity.append(metrics.get('harmony', "N/A"))
             melodic_contour.append(metrics.get('melodic_contour', "N/A"))
+
             works, explanation = ma.concept_works(instr, part_analyses.get(instr))
             works_well.append("Yes - " + explanation if works else "No - " + explanation)
 
@@ -177,9 +178,13 @@ if st.session_state.midi_generated:
             "Melodic Contour": melodic_contour,
         })
 
+        # 🔹 Remove any fully empty rows (safety)
+        summary_df = summary_df.dropna(how="all")
 
+        # 🔹 Add numbering column starting at 1
+        summary_df.insert(0, "No.", range(1, len(summary_df) + 1))
 
-        # Display table
+        # Display table (no extra rows, clean numbering)
         rows = len(summary_df)
         row_height = 45
         header_height = 60
@@ -190,11 +195,14 @@ if st.session_state.midi_generated:
             header_height + row_height * rows - padding_fix
         )
 
-        st.dataframe(
+        st.data_editor(
             summary_df,
             use_container_width=True,
-            height=table_height
+            height=table_height,
+            hide_index=True,
+            num_rows="fixed"
         )
+
 
         st.subheader("Does the selected mathematical concept work well for the instrument?")
         for idx, instr in enumerate(st.session_state.inst_math_choices.keys()):

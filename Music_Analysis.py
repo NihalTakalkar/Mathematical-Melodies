@@ -1,10 +1,8 @@
 import streamlit as st, music21 as m21
 from Music_Generation import string_instruments, woodwind_instruments, brass_instruments, percussion_instruments, pianos, choir
 
-def overall_analysis(file_path):
-    score = m21.converter.parse(file_path)
-    notes = score.flat.notes
-    pitched_notes = [note for note in notes if isinstance(note, m21.note.Note)]
+def overall_analysis(file_path): # Analyze the entire MIDI file
+    score = m21.converter.parse(file_path) # convert MIDI file to music21 stream for analysis
 
     analysis_results = analysis(score)
 
