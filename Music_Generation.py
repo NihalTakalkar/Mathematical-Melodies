@@ -110,7 +110,7 @@ def generate_midi(filename, inst_math_choices, key, numMeasures, time_signature)
         track.append(MetaMessage('track_name', name=instrument, time=0))
         mid.tracks.append(track)
 
-        channel = 9 if instrument in percussion_instruments else (idx % 15) # Channel 9 is reserved for percussion
+        channel = 9 if instrument in percussion_instruments else (idx % 15) # Channel 9 is reserved for percussion for MIDI standard, other instruments use channels 0-14
 
         if instrument not in percussion_instruments: # Set the instrument program change
             program = instruments_dict[instrument] # Get the MIDI program number
@@ -119,7 +119,7 @@ def generate_midi(filename, inst_math_choices, key, numMeasures, time_signature)
         else:
             octave = 0
 
-        sequence = assign_instrument_algorithm(concept) # Get the number series based on the selected mathematical concept
+        sequence = assign_instrument_algorithm(concept, instrument) # Get the number series based on the selected mathematical concept
         numTicks = 0 # Total ticks played so far
         indexSeq = idx * 5 # Offsets the starting index in the sequence for each instrument so that they don't all start the same
         lenSeq = len(sequence) # Length of the sequence
@@ -141,10 +141,10 @@ def generate_midi(filename, inst_math_choices, key, numMeasures, time_signature)
                 note = instruments_dict[instrument]
             else:
                 degree = n % len(key) # Map number to a degree in the selected key
-                register = (n // len(key)) % 3 # Determines which octave/register to play the note in
+                register = (n // len(key)) % 3 # Determines which octave/register to play the note in 
                 note = key[degree] + octave + (register * 12) # key note + instrument octave adjustment + register shift
 
-            note = max(0, min(127, int(note))) # Ensure note is within MIDI range
+            note = max(0, min(127, int(note))) # Ensure note is within MIDI range 
 
             track.append(Message('note_on', note=note, velocity=64, time=0, channel=channel)) 
             track.append(Message('note_off', note=note, velocity=64, time=duration, channel=channel)) # Plays note for 'duration' ticks
@@ -182,7 +182,7 @@ def multiples_of_five(n):
             multiples.append(num)
     return multiples
 
-def assign_instrument_algorithm(concept): # Assigns the appropriate number generation function based on the selected concept
+def assign_instrument_algorithm(concept, instrument): # Assigns the appropriate number generation function based on the selected concept
     if concept == "Fibonacci Sequence":
         return generate_fibonacci(100) # Generate first 100 Fibonacci numbers
     elif concept == "Prime Numbers":
@@ -191,8 +191,17 @@ def assign_instrument_algorithm(concept): # Assigns the appropriate number gener
         return multiples_of_two(100) # Generate multiples of 2 up to 100
     elif concept == "Multiples of 5":
         return multiples_of_five(100) # Generate multiples of 5 up to 100
-    else: # if no concept is selected, default to Fibonacci
-        return generate_fibonacci(100)
+    else: # If no concept selected, assign a default sequence based on instrument type
+        if instrument in string_instruments:
+            return generate_fibonacci(100) # Default to Fibonacci for strings if no concept selected
+        elif instrument in woodwind_instruments:
+            return generate_fibonacci(100) # Default to Fibonacci for woodwinds if no concept selected
+        elif instrument in brass_instruments:
+            return multiples_of_two(100) # Default to multiples of 2 for brass if no concept selected
+        elif instrument in percussion_instruments or instrument in pianos:
+            return multiples_of_five(100) # Default to multiples of 5 for percussion and pianos if no concept selected
+        elif instrument in choir:
+            return multiples_of_two(100) # Default to multiples of 2 for choir if no concept selected
     
 def key_to_midi(Key, major_or_minor):
                                                 # Converts each note of the selected key scale to its corresponding MIDI note number

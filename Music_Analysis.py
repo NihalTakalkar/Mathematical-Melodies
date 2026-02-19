@@ -3,70 +3,73 @@ from Music_Generation import string_instruments, woodwind_instruments, brass_ins
 
 def overall_analysis(file_path): # Analyze the entire MIDI file
     score = m21.converter.parse(file_path) # convert MIDI file to music21 stream for analysis
-
-    analysis_results = analysis(score)
+    analysis_results = analysis(score) # Gets the result of sending the stream to the analysis function
 
     return analysis_results
 
 def analysis(stream):
 
-    all_notes = stream.flat.notes
-    pitched_notes = [note for note in all_notes if isinstance(note, m21.note.Note)]
+    all_notes = stream.flat.notes # Get all notes in the stream 
+    pitched_notes = [note for note in all_notes if isinstance(note, m21.note.Note)] # Filter to only pitched notes for each note in all_notes if it's an instance of music21 note.Note
 
-    # Analyze interval distribution
+    # Analyze the intervals between consecutive notes to determine interval distribution
     def analyze_intervals(notes):
-        intervals = []   
+        intervals = [] # List to store intervals between consecutive notes
         
         for i in range(1, len(notes)):
-            interval = abs(notes[i].pitch.midi - notes[i-1].pitch.midi)
-            intervals.append(interval)
-        interval_distribution = {}
+            interval = abs(notes[i].pitch.midi - notes[i-1].pitch.midi) # Calculate absolute interval in semitones
+            intervals.append(interval) # Append interval to the list
+        interval_distribution = {} # Dictionary to store interval distribution
         for interval in intervals:
-            if interval in interval_distribution:
+            if interval in interval_distribution: # If interval already in dictionary, increment its count
                 interval_distribution[interval] += 1
-            else:
+            else: # If interval not in dictionary, initialize its count to 1
                 interval_distribution[interval] = 1
         return interval_distribution
-    interval_distribution = analyze_intervals(pitched_notes)
+    interval_distribution = analyze_intervals(pitched_notes) # Get interval distribution
     
+    # Calculate step size distribution as the average interval size
     def step_size_distribution(step_size, mean_interval):
         return mean_interval / step_size if step_size != 0 else 0
     
     mean_interval = sum(interval * count for interval, count in interval_distribution.items()) / sum(interval_distribution.values()) if sum(interval_distribution.values()) != 0 else 0
-    step_size_dist = step_size_distribution(1, mean_interval)
+    # The mean interval is calculated by summing the product of each interval and its count, divided by the total number of intervals
+    step_size_dist = step_size_distribution(1, mean_interval) # The distance between consecutive notes is considered as step size of 1
     
+    # Calculate rhythm density as the number of notes per total duration
     def rhythm_density(stream):
-        total_duration = stream.highestTime
-        num_notes = len(pitched_notes)
-        return num_notes / total_duration if total_duration != 0 else 0
+        total_duration = stream.highestTime # Total duration of the stream in quarter lengths. highestTime gives the end time of the last event in the stream
+        num_notes = len(pitched_notes) # Number of pitched notes in the stream
+        return num_notes / total_duration if total_duration != 0 else 0 # Return notes per quarter length
     rhythm_density_value = rhythm_density(stream)
         
-    
+    # Calculate harmonic complexity as the ratio of unique chords to total chords
     def harmonic_complexity(stream):
-        score = stream if isinstance(stream, m21.stream.Stream) else m21.converter.parse(stream)
-        chords = score.chordify().recurse().getElementsByClass(m21.chord.Chord)
-
-        unique_chords = set()
+        score = stream if isinstance(stream, m21.stream.Stream) else m21.converter.parse(stream) # Ensure we have a music21 stream
+        chords = score.chordify().recurse().getElementsByClass(m21.chord.Chord) 
+        # Get all chords in the stream by chordifying the stream and retrieving chord elements
+        unique_chords = set() # Set to store unique chord pitch class sets
         for chord in chords:
-            pcs = tuple(sorted(p.pitchClass for p in chord.pitches))
-            unique_chords.add(pcs)
+            pcs = tuple(sorted(p.pitchClass for p in chord.pitches))    # Get sorted tuple of pitch classes for the chord
+            unique_chords.add(pcs)                                      # Add pitch class set to unique chords set
 
-        return len(unique_chords) / len(chords) if chords else 0
+        return len(unique_chords) / len(chords) if chords else 0        # Return ratio of unique chords to total chords
     harmonic_complexity_value = harmonic_complexity(stream)
     
+    # Analyze melodic contour as the sequence of upward and downward movements
     def melodic_contour(notes):
         contour = []
         
-        for i in range(1, len(notes)):
-            if notes[i].pitch.midi > notes[i-1].pitch.midi:
+        for i in range(1, len(notes)):                         # Start from second note to compare with previous
+            if notes[i].pitch.midi > notes[i-1].pitch.midi:    # If current note is higher than previous
                 contour.append('up')
-            elif notes[i].pitch.midi < notes[i-1].pitch.midi:
+            elif notes[i].pitch.midi < notes[i-1].pitch.midi:  # If current note is lower than previous
                 contour.append('down')
-            else:
+            else:                                              # If current note is the same as previous
                 contour.append('same')
         
         return contour
-    melodic_contour_value = melodic_contour(pitched_notes)
+    melodic_contour_value = melodic_contour(pitched_notes) # Get melodic contour
 
     return {
         'step_size_distribution': step_size_dist,
@@ -79,38 +82,38 @@ def overall_analysis_output(results):
 
         interpretation = {}
 
-        step = results['step_size_distribution']
-        if step < 5:
+        step = results['step_size_distribution'] # Get the step size distribution from results and provide interpretation
+        if step < 5:        # < 5 means small average interval between notes
             interpretation['step_size'] = "The melody has small step sizes, giving a smooth melodic movement."
-        elif step < 10:
+        elif step < 10:     # < 10 means moderate average interval between notes
             interpretation['step_size'] = "The melody has moderate step sizes, giving a balanced melodic contour."
-        else:
+        else:               # 10 means large average interval between notes
             interpretation['step_size'] = "The melody has large step sizes, creating a more dramatic melodic effect."
 
-        rhythm = results['rhythm_density']
-        if rhythm < 2:
+        rhythm = results['rhythm_density'] # Get rhythm density from results and provide interpretation
+        if rhythm < 2:      # < 2 notes per quarter length
             interpretation['rhythm'] = "The melody has low rhythm density, resulting in a sparse rhythmic texture."
-        elif rhythm < 4:
+        elif rhythm < 4:    # < 4 notes per quarter length
             interpretation['rhythm'] = "The melody has moderate rhythm density, providing a balanced rhythmic feel."
-        else:
+        else:               # 4 or more notes per quarter length
             interpretation['rhythm'] = "The melody has high rhythm density, creating a lively and energetic rhythmic texture."
 
-        harmony = results['harmonic_complexity']
-        if harmony < 0.3:
+        harmony = results['harmonic_complexity'] # Get harmonic complexity from results and provide interpretation
+        if harmony < 0.3:   # < 0.3 means simple harmonic structures
             interpretation['harmony'] = "The melody has simple harmonic structures, making it easy to follow."
-        elif harmony < 0.6:
+        elif harmony < 0.6: # < 0.6 means moderately complex harmonic structures
             interpretation['harmony'] = "The melody has moderately complex harmonic structures, adding interest."
-        else:
+        else:               # 0.6 or more means complex harmonic structures
             interpretation['harmony'] = "The melody has complex harmonic structures, providing rich musical depth."
 
-        contour = results['melodic_contour']
-        up_moves = contour.count('up')
-        down_moves = contour.count('down')
-        if up_moves > down_moves:
+        contour = results['melodic_contour'] # Get melodic contour from results and provide interpretation
+        up_moves = contour.count('up') # Count upward movements in the contour
+        down_moves = contour.count('down') # Count downward movements in the contour
+        if up_moves > down_moves:   # if more upward movements
             interpretation['melodic_contour'] = "The melody generally ascends, creating a sense of uplift."
-        elif down_moves > up_moves:
+        elif down_moves > up_moves: # if more downward movements
             interpretation['melodic_contour'] = "The melody generally descends, evoking a calming effect."
-        else:
+        else:                       # balanced upward and downward movements
             interpretation['melodic_contour'] = "The melody has a balanced contour, providing variety."
 
 
@@ -122,26 +125,23 @@ def individual_analysis(file_path):
     part_analyses = {}
 
     for part in score.parts:
-        part_name = part.partName if part.partName else "Unknown Instrument"
-        notes = part.flat.notes
-        pitched_notes = [note for note in notes if isinstance(note, m21.note.Note)]
+        part_name = part.partName if part.partName else "Unknown Instrument" # Get part name or default to "Unknown Instrument"
+        analysis_results = analysis(part)           # Analyze the part using the analysis function
 
-        analysis_results = analysis(part)
-
-        part_analyses[part_name] = analysis_results
+        part_analyses[part_name] = analysis_results # Store the analysis results in the dictionary with part name as key
 
     return part_analyses
 
 
-def individual_analysis_output(part_analyses):
+def individual_analysis_output(part_analyses): # Provide interpretations for each instrument part
 
-    interpretations = {}
+    interpretations = {} # Dictionary to store interpretations for each part
 
-    for part_name, results in part_analyses.items():
-        interpretation = {}
+    for part_name, results in part_analyses.items(): # For each part and its analysis results
+        interpretation = {} # Dictionary to store interpretation for the current part
 
         
-        step = results['step_size_distribution']
+        step = results['step_size_distribution'] # Get step size distribution from results
         interpretation['step_size'] = (
             f"The {part_name} has small step sizes, giving smooth melodic movement."
             if step < 5 else
@@ -150,7 +150,7 @@ def individual_analysis_output(part_analyses):
             f"The {part_name} has large step sizes, creating dramatic melodic leaps."
         )
 
-        rhythm = results['rhythm_density']
+        rhythm = results['rhythm_density'] # Get rhythm density from results
         interpretation['rhythm'] = (
             f"The {part_name} has low rhythmic density."
             if rhythm < 2 else
@@ -159,7 +159,7 @@ def individual_analysis_output(part_analyses):
             f"The {part_name} has high rhythmic activity."
         )
 
-        harmony = results['harmonic_complexity']
+        harmony = results['harmonic_complexity'] # Get harmonic complexity from results
         interpretation['harmony'] = (
             f"The {part_name} has simple harmonic structures."
             if harmony < 0.3 else
@@ -168,7 +168,7 @@ def individual_analysis_output(part_analyses):
             f"The {part_name} has rich harmonic complexity."
         )
 
-        contour = results['melodic_contour']
+        contour = results['melodic_contour']   # Get melodic contour from results
         interpretation['melodic_contour'] = (
             f"The {part_name} generally ascends."
             if contour.count('up') > contour.count('down') else
@@ -181,7 +181,7 @@ def individual_analysis_output(part_analyses):
 
     return interpretations
 
-def concept_works(instrument, results): 
+def concept_works(instrument, results): # Evaluate if the mathematical concept works well for the given instrument based on analysis results
 
     fit_score = 0
     feedback = ""
@@ -193,7 +193,7 @@ def concept_works(instrument, results):
    
 
     # step size analysis
-    if instrument in string_instruments:
+    if instrument in string_instruments:        # String instruments like smaller step sizes because they can play smooth, connected notes
         if step <= 5:
             fit_score += 2
             feedback += "The step size fits well with string instruments.\n"
@@ -201,7 +201,7 @@ def concept_works(instrument, results):
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider using smaller step sizes for string instruments.\n"
 
-    elif instrument in woodwind_instruments:
+    elif instrument in woodwind_instruments:    # Woodwind instruments can handle moderate step sizes because of their breath control
         if step >= 2 and step <= 7:
             fit_score += 2
             feedback += "The step size fits well with woodwind instruments.\n"
@@ -209,7 +209,7 @@ def concept_works(instrument, results):
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider using moderate step sizes for woodwind instruments.\n"
         
-    elif instrument in brass_instruments:
+    elif instrument in brass_instruments:       # Brass instruments often excel with larger step sizes due to their powerful sound
         if step >= 4 and step <= 12:
             fit_score += 2
             feedback += "The step size fits well with brass instruments.\n"
@@ -217,15 +217,15 @@ def concept_works(instrument, results):
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider using larger step sizes for brass instruments.\n"
     
-    elif instrument in percussion_instruments:
-        fit_score += 2
+    elif instrument in percussion_instruments:  # Percussion instruments are less affected by step size since they often play rhythmic patterns
+        fit_score += 2 
         feedback += "Step size is less relevant for percussion instruments.\n"
 
-    elif instrument in pianos:
+    elif instrument in pianos:                  # Pianos can handle a wide range of step sizes due to their versatility
         fit_score += 2
         feedback += "Any step size works well for pianos.\n"
 
-    elif instrument in choir:
+    elif instrument in choir:                   # Choir voices generally prefer smaller step sizes for singable melodies
         if step >= 1 and step <= 5:
             fit_score += 2
             feedback += "The step size fits well with choir voices.\n"
@@ -233,8 +233,10 @@ def concept_works(instrument, results):
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider using moderate step sizes for choir voices.\n"
 
+
+
     # rhythm density analysis
-    if instrument in string_instruments:
+    if instrument in string_instruments:        # String instruments often work well with lower rhythm densities for expressive playing
         if rhythm <= 2:
             fit_score += 2
             feedback += "The rhythm density fits well with string instruments.\n"
@@ -242,7 +244,7 @@ def concept_works(instrument, results):
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider using low rhythm density for string instruments.\n"
 
-    elif instrument in woodwind_instruments:
+    elif instrument in woodwind_instruments:    # Woodwind instruments can handle moderate rhythm densities due to their agility
         if rhythm >= 2 and rhythm <= 4:
             fit_score += 2
             feedback += "The rhythm density fits well with woodwind instruments.\n"
@@ -250,7 +252,7 @@ def concept_works(instrument, results):
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider using moderate rhythm density for woodwind instruments.\n"
     
-    elif instrument in brass_instruments:
+    elif instrument in brass_instruments:       # Brass instruments often excel with lower rhythm densities to showcase their powerful tone
         if rhythm <= 2:
             fit_score += 2
             feedback += "The rhythm density fits well with brass instruments.\n"
@@ -258,7 +260,7 @@ def concept_works(instrument, results):
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider using low rhythm density for brass instruments.\n"
 
-    elif instrument in percussion_instruments:
+    elif instrument in percussion_instruments:  # Percussion instruments typically work well with higher rhythm densities for energetic patterns
         if rhythm >= 2 and rhythm <= 6:
             fit_score += 2
             feedback += "The rhythm density fits well with percussion instruments.\n"
@@ -266,15 +268,15 @@ def concept_works(instrument, results):
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider using moderate rhythm density for percussion instruments.\n"
 
-    elif instrument in pianos:
-        if rhythm <= 6:
+    elif instrument in pianos:                  # Pianos are versatile and can handle a low to moderate rhythm density
+        if rhythm <= 6: 
             fit_score += 2
             feedback += "The rhythm density fits well with pianos.\n" 
         else:
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider using moderate rhythm density for pianos.\n"
 
-    elif instrument in choir:
+    elif instrument in choir:                   # Choir voices generally prefer lower rhythm densities for clarity in singing
         if rhythm <= 2:
             fit_score += 2
             feedback += "The rhythm density fits well with choir voices.\n"
@@ -282,8 +284,10 @@ def concept_works(instrument, results):
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider using low rhythm density for choir voices.\n"
 
+
+
     # harmonic complexity
-    if instrument in string_instruments:
+    if instrument in string_instruments:        # String instruments often work well with simpler harmonic structures for clarity
         if harmony <= 0.4:
             fit_score += 2
             feedback += "The harmonic complexity fits well with string instruments.\n"
@@ -291,7 +295,7 @@ def concept_works(instrument, results):
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider using simpler harmonic structures for string instruments.\n"
 
-    elif instrument in woodwind_instruments:
+    elif instrument in woodwind_instruments:    # Woodwind instruments can handle moderate harmonic complexity due to their tonal variety
         if harmony >= 0.3 and harmony <= 0.6:
             fit_score += 2
             feedback += "The harmonic complexity fits well with woodwind instruments.\n"
@@ -299,7 +303,7 @@ def concept_works(instrument, results):
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider using moderate harmonic complexity for woodwind instruments.\n"
 
-    elif instrument in brass_instruments:
+    elif instrument in brass_instruments:       # Brass instruments often excel with low to moderate harmonic complexity to highlight their bold sound
         if harmony >= 0.1 and harmony <= 0.4:
             fit_score += 2
             feedback += "The harmonic complexity fits well with brass instruments.\n"
@@ -307,7 +311,7 @@ def concept_works(instrument, results):
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider using low harmonic complexity for brass instruments.\n"
 
-    elif instrument in percussion_instruments:
+    elif instrument in percussion_instruments:  # Percussion instruments typically work best with very simple harmonic structures because they focus on rhythm
         if harmony <= 0.2:
             fit_score += 2
             feedback += "The harmonic complexity fits well with percussion instruments.\n"
@@ -315,7 +319,7 @@ def concept_works(instrument, results):
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider using very simple harmonic structures for percussion instruments.\n"
 
-    elif instrument in pianos:
+    elif instrument in pianos:                  # Pianos are versatile and can handle a moderate range of harmonic complexity
         if harmony >= 0.3 and harmony <= 0.8:
             fit_score += 2
             feedback += "The harmonic complexity fits well with pianos.\n"
@@ -323,7 +327,7 @@ def concept_works(instrument, results):
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider using moderate harmonic complexity for pianos.\n"
 
-    elif instrument in choir:
+    elif instrument in choir:                   # Choir voices generally prefer simpler harmonic structures for singable melodies
         if harmony <= 0.4:
             fit_score += 2
             feedback += "The harmonic complexity fits well with choir voices.\n"
@@ -331,8 +335,10 @@ def concept_works(instrument, results):
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider using simpler harmonic structures for choir voices.\n"
 
+            
+
     # melodic contour
-    if instrument in string_instruments:
+    if instrument in string_instruments:        # String instruments often excel with ascending melodic contours for expressive playing
         if "up" in contour:
             fit_score += 2
             feedback += "The melodic contour fits well with string instruments.\n"
@@ -340,7 +346,7 @@ def concept_works(instrument, results):
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider incorporating ascending melodic lines for string instruments.\n"
     
-    elif instrument in woodwind_instruments:
+    elif instrument in woodwind_instruments:    # Woodwind instruments can handle both ascending and descending contours due to their breath control
         if "up" in contour or "down" in contour:
             fit_score += 2
             feedback += "The melodic contour fits well with woodwind instruments.\n"
@@ -348,7 +354,7 @@ def concept_works(instrument, results):
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider adding more melodic movement for woodwind instruments.\n"
 
-    elif instrument in brass_instruments:
+    elif instrument in brass_instruments:       # Brass instruments often excel with ascending melodic contours to showcase their powerful sound
         if "up" in contour:
             fit_score += 2
             feedback += "The melodic contour fits well with brass instruments.\n"
@@ -356,15 +362,15 @@ def concept_works(instrument, results):
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider incorporating ascending melodic lines for brass instruments.\n"
 
-    elif instrument in percussion_instruments:
+    elif instrument in percussion_instruments:  # Percussion instruments are less affected by melodic contour since they often play rhythmic patterns
         fit_score += 2
         feedback += "Melodic contour is less relevant for percussion instruments.\n"
     
-    elif instrument in pianos:
+    elif instrument in pianos:                  # Pianos can handle a wide range of melodic contours due to their versatility
         fit_score += 2
         feedback += "Any melodic contour works well for pianos.\n"
 
-    elif instrument in choir:
+    elif instrument in choir:                   # Choir voices generally prefer melodic contours with movement for singable melodies
         if "up" in contour or "down" in contour:
             fit_score += 2
             feedback += "The melodic contour fits well with choir voices.\n"
@@ -372,5 +378,5 @@ def concept_works(instrument, results):
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider adding more melodic movement for choir voices.\n"
 
-    works_well = fit_score >= 5
+    works_well = fit_score >= 5 # Consider concept works well if fit score is 5 or higher
     return works_well, feedback

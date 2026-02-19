@@ -57,17 +57,30 @@ instrument_choice = st.multiselect(
     list(mg.instruments_dict.keys())
 )
 
-for instrument in instrument_choice:
-    math_choice = st.selectbox(
-        f"Select mathematical concept for {instrument}:",
-        ["Fibonacci Sequence", "Prime Numbers", "Multiples of 2", "Multiples of 5"],
-        key=f"math_select_{instrument}"
-    )
+st.session_state.inst_math_choices = {
+    instr: concept
+    for instr, concept in st.session_state.inst_math_choices.items()
+    if instr in instrument_choice
+}
 
-    # Update only this instrument's concept
-    st.session_state.inst_math_choices[instrument] = math_choice
+for k in list(st.session_state.keys()):
+    if k.startswith("math_select_"):
+        instr_name = k.replace("math_select_", "", 1)
+        if instr_name not in instrument_choice:
+            del st.session_state[k]
 
-    st.write(f"You selected {math_choice} for the {instrument}.")
+if instrument_choice:
+    for instrument in instrument_choice:
+        math_choice = st.selectbox(
+            f"Select mathematical concept for {instrument}:",
+            ["None Selected", "Fibonacci Sequence", "Prime Numbers", "Multiples of 2", "Multiples of 5"],
+            key=f"math_select_{instrument}"
+        )
+
+        # Update only this instrument's concept
+        st.session_state.inst_math_choices[instrument] = math_choice
+
+        st.write(f"You selected {math_choice} for the {instrument}.")
 
 Key = st.selectbox("Select a key: ", 
                    ("None Selected", "C", "C♯/D♭", "D", "D♯/E♭", "E", "F", "F♯/G♭", "G", 
@@ -89,12 +102,22 @@ if st.button("Generate Musical MIDI"):
     if instrument_choice and Key != "None Selected" and numMeasures > 0 and time_signature != "None Selected":
         mg.generate_midi("mathematical_melody.mid", st.session_state.inst_math_choices, key, numMeasures, time_signature)
         st.session_state.midi_generated = True
+        if any(math_choice == "None Selected" for math_choice in st.session_state.inst_math_choices.values()):
+            st.text("Note: Some instruments were assigned a default sequence since no mathematical concept was selected for them.")
         st.success("Your MIDI file has been generated!")
 
         
 
     else:
-        st.error("Please fill in all required fields.")
+        if not instrument_choice:
+            st.error("Please select at least one instrument.")
+        if Key == "None Selected":
+            st.error("Please select a key.")
+        if numMeasures <= 0:
+            st.error("Please enter a valid number of measures.")
+        if time_signature == "None Selected":
+            st.error("Please select a time signature.")
+        
 
 # Music Analysis
 if st.session_state.midi_generated:
