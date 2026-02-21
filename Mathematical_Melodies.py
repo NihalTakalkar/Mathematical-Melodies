@@ -73,7 +73,7 @@ if instrument_choice:
     for instrument in instrument_choice:
         math_choice = st.selectbox(
             f"Select mathematical concept for {instrument}:",
-            ["None Selected", "Fibonacci Sequence", "Prime Numbers", "Multiples of 2", "Multiples of 5"],
+            ["None Selected", "Fibonacci Sequence", "Prime Numbers", "Multiples of 2", "Multiples of 5", "Fractals"],
             key=f"math_select_{instrument}"
         )
 
@@ -168,6 +168,25 @@ if st.session_state.midi_generated:
         part_analyses = ma.individual_analysis("mathematical_melody.mid")
         individual_interpretation = ma.individual_analysis_output(part_analyses)
 
+        # ✅ Helper: resolve the displayed concept (user choice OR instrument default)
+        def resolved_concept_label(instr: str) -> str:
+            chosen = st.session_state.inst_math_choices.get(instr, "N/A")
+
+            if chosen != "None Selected":
+                return chosen
+
+            # Instrument-based defaults (match your assign_instrument_algorithm defaults)
+            if instr in mg.string_instruments or instr in mg.woodwind_instruments:
+                return "Fibonacci Sequence (Default)"
+            elif instr in mg.brass_instruments:
+                return "Multiples of 2 (Default)"
+            elif instr in mg.percussion_instruments or instr in mg.pianos:
+                return "Multiples of 5 (Default)"
+            elif instr in mg.choir:
+                return "Multiples of 2 (Default)"
+
+            return "Fibonacci Sequence (Default)"  # final fallback
+
         # Build data for table
         instruments = []
         math_concepts = []
@@ -179,9 +198,10 @@ if st.session_state.midi_generated:
 
         for instr in st.session_state.inst_math_choices.keys():
             instruments.append(instr)
-            math_concepts.append(st.session_state.inst_math_choices.get(instr, "N/A"))
 
-            # If this instrument was analyzed, get its metrics; otherwise, use "N/A"
+            # ✅ CHANGED LINE: show resolved default instead of "None Selected"
+            math_concepts.append(resolved_concept_label(instr))
+
             metrics = individual_interpretation.get(instr, {})
             interval_distribution.append(metrics.get('step_size', "N/A"))
             rhythm_density.append(metrics.get('rhythm', "N/A"))
@@ -201,22 +221,14 @@ if st.session_state.midi_generated:
             "Melodic Contour": melodic_contour,
         })
 
-        # 🔹 Remove any fully empty rows (safety)
         summary_df = summary_df.dropna(how="all")
-
-        # 🔹 Add numbering column starting at 1
         summary_df.insert(0, "No.", range(1, len(summary_df) + 1))
 
-        # Display table (no extra rows, clean numbering)
         rows = len(summary_df)
         row_height = 45
         header_height = 60
         padding_fix = 90
-
-        table_height = max(
-            250,
-            header_height + row_height * rows - padding_fix
-        )
+        table_height = max(250, header_height + row_height * rows - padding_fix)
 
         st.data_editor(
             summary_df,
@@ -225,6 +237,7 @@ if st.session_state.midi_generated:
             hide_index=True,
             num_rows="fixed"
         )
+
 
 
         st.subheader("Does the selected mathematical concept work well for the instrument?")

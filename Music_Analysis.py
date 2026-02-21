@@ -83,7 +83,7 @@ def overall_analysis_output(results):
         interpretation = {}
 
         step = results['step_size_distribution'] # Get the step size distribution from results and provide interpretation
-        if step < 5:        # < 5 means small average interval between notes
+        if step < 5:        # < 5 means small average interval between notes 
             interpretation['step_size'] = "The melody has small step sizes, giving a smooth melodic movement."
         elif step < 10:     # < 10 means moderate average interval between notes
             interpretation['step_size'] = "The melody has moderate step sizes, giving a balanced melodic contour."
@@ -209,13 +209,13 @@ def concept_works(instrument, results): # Evaluate if the mathematical concept w
             fit_score -= 1 if fit_score > 0 else 0
             feedback += "Consider using moderate step sizes for woodwind instruments.\n"
         
-    elif instrument in brass_instruments:       # Brass instruments often excel with larger step sizes due to their powerful sound
+    elif instrument in brass_instruments:       # Brass instruments often excel with moderate-high step sizes due to their powerful sound
         if step >= 4 and step <= 12:
             fit_score += 2
             feedback += "The step size fits well with brass instruments.\n"
         else:
             fit_score -= 1 if fit_score > 0 else 0
-            feedback += "Consider using larger step sizes for brass instruments.\n"
+            feedback += "Consider using moderate step sizes for brass instruments.\n"
     
     elif instrument in percussion_instruments:  # Percussion instruments are less affected by step size since they often play rhythmic patterns
         fit_score += 2 
