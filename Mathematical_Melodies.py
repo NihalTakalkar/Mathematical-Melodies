@@ -73,7 +73,7 @@ if instrument_choice:
     for instrument in instrument_choice:
         math_choice = st.selectbox(
             f"Select mathematical concept for {instrument}:",
-            ["None Selected", "Fibonacci Sequence", "Prime Numbers", "Multiples of 2", "Multiples of 5", "Fractals"],
+            ["None Selected", "Fibonacci Sequence", "Prime Numbers", "Multiples of 2", "Multiples of 5"],
             key=f"math_select_{instrument}"
         )
 
